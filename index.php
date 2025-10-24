@@ -1,10 +1,38 @@
 <?php
 session_start();
 
-$mysqli = new mysqli('localhost', 'root', '', 'charlie_db');
+// Connect to MySQL server (without selecting a database initially)
+$mysqli = new mysqli('localhost', 'root', '');
 if ($mysqli->connect_error) {
     die('Database connection failed: ' . $mysqli->connect_error);
 }
+
+// Create database if it doesn't exist
+$db_name = 'charlie_db';
+$mysqli->query("CREATE DATABASE IF NOT EXISTS `{$db_name}`");
+$mysqli->select_db($db_name);
+
+// Create users table if it doesn't exist
+$create_users_table = "
+CREATE TABLE IF NOT EXISTS users (
+  id VARCHAR(64) PRIMARY KEY,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  role ENUM('agent','admin') DEFAULT 'agent',
+  signature TEXT DEFAULT ''
+)";
+$mysqli->query($create_users_table);
+
+// Create messages table if it doesn't exist
+$create_messages_table = "
+CREATE TABLE IF NOT EXISTS messages (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  sender_id VARCHAR(128) NOT NULL,
+  receiver_id VARCHAR(128) NOT NULL,
+  message TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)";
+$mysqli->query($create_messages_table);
 
 // Config
 $SALT = 'random_salt_asasasssasa';
@@ -256,4 +284,4 @@ function template_header($title) {
 function template_footer() {
     echo "</body></html>";
 }
-?>
+?>  
