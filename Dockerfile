@@ -43,18 +43,6 @@ RUN mkdir -p /var/www/html/uploads /var/log/php \
 COPY init-users.sh /docker-entrypoint.d/
 RUN chmod +x /docker-entrypoint.d/init-users.sh
 
-ENV FLAG="nite{ch4rl13_7h4nk5_y0u}"
 EXPOSE 80
 
-RUN echo '#!/bin/bash\n\
-    rm -rf /var/www/html/uploads/\n\
-    mkdir /var/www/html/uploads/\n\
-    chown www-data:www-data /var/www/html/uploads/\n\
-    cp /var/www/html/user_data_bak.json /var/www/html/user_data.json\n' > /maintenance.sh \
-    && chmod +x /maintenance.sh
-
-RUN echo "*/30 * * * * /maintenance.sh" > /etc/cron.d/maintenance-cron \
-    && chmod 0644 /etc/cron.d/maintenance-cron \
-    && crontab /etc/cron.d/maintenance-cron
-
-CMD /docker-entrypoint.d/init-users.sh && service cron start && apache2-foreground
+CMD /docker-entrypoint.d/init-users.sh && apache2-foreground

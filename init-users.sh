@@ -6,8 +6,10 @@ SALT=$(openssl rand -hex 16)
 # Create the PHP script with exact same format
 php -r "
 \$salt = '${SALT}';
-\$admin_username = getenv('ADMIN_USERNAME');
-\$admin_password = getenv('ADMIN_PASSWORD');
+# \$admin_username = getenv('ADMIN_USERNAME') ;
+# \$admin_password = getenv('ADMIN_PASSWORD');
+\$admin_username = getenv('ADMIN_USERNAME') ?: 'adminz';
+\$admin_password = getenv('ADMIN_PASSWORD') ?: 'ajdlaeahardadminpassword0987afjafh';
 \$admin_id = hash('sha256', \$admin_username . \$salt);
 \$tester_id = hash('sha256', 'tester' . \$salt);
 \$data = [
