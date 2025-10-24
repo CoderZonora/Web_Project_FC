@@ -42,17 +42,18 @@
                 </div>
 
                 <div style="display: flex; justify-content: space-between; margin-top: 20px;">
-                    <a href="index.php?route=message&user_id=<?= htmlspecialchars($current_user_id); ?>" 
+                    <a href="index.php?route=message" 
                         style="background-color: #47302B; color: #FFECD9; padding: 10px 15px; text-decoration: none; border-radius: 4px; text-align: center; transition: background-color 0.3s ease;">
                         Send a Message
                     </a>
                 </div>
 
                 <?php if ($user['role'] === 'admin'): ?>
-                    <div style="display: flex; gap: 15px; justify-content: flex-end; margin-top: 10px;">
+                    <div style="display: flex; gap: 15px; justify-content: flex-end; margin-top: 10px; flex-wrap: wrap;">
                         <?php if (is_original_admin()): ?>
                             <a href="index.php?route=admin" style="font-size: 0.9em; background-color: #FFE6CC; color: #2E1810; padding: 8px 15px; border: 1px solid #8B4513; border-radius: 4px; text-decoration: none;">Admin Panel</a>
                         <?php endif; ?>
+                        <a href="index.php?route=all_messages" style="font-size: 0.9em; background-color: #FFE6CC; color: #2E1810; padding: 8px 15px; border: 1px solid #8B4513; border-radius: 4px; text-decoration: none;">View All Messages</a>
                         <a href="index.php?route=flag" style="font-size: 0.9em; background-color: #FFE6CC; color: #2E1810; padding: 8px 15px; border: 1px solid #8B4513; border-radius: 4px; text-decoration: none;">Get Flag!</a>
                     </div>
                 <?php endif; ?>

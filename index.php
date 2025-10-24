@@ -141,10 +141,14 @@ switch ($route) {
         $requested_user_id = $_GET['user_id'] ?? null;
         $target_user_id = $requested_user_id ?: $_SESSION['user_id'];
         $target_user = get_user_by_id($mysqli, $target_user_id);
+        
+        // Get current user info
+        $current_user = get_user_by_id($mysqli, $_SESSION['user_id']);
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $signature = $_POST['signature'] ?? '';
             $messageText = trim($_POST['message'] ?? '');
+            $receiver_id = $_POST['receiver_id'] ?? '';
 
             // Update signature
             $stmt = $mysqli->prepare("UPDATE users SET signature=? WHERE id=?");
@@ -152,19 +156,26 @@ switch ($route) {
             $stmt->execute();
             $stmt->close();
 
-            // Save message
-            if ($messageText && $target_user_id !== $_SESSION['user_id']) {
+            // Save message - only if not sending to yourself and message is not empty
+            if ($messageText && $receiver_id && $receiver_id !== $_SESSION['user_id']) {
                 $stmt = $mysqli->prepare("INSERT INTO messages (sender_id, receiver_id, message) VALUES (?, ?, ?)");
-                $stmt->bind_param('sss', $_SESSION['user_id'], $target_user_id, $messageText);
+                $stmt->bind_param('sss', $_SESSION['user_id'], $receiver_id, $messageText);
                 $stmt->execute();
                 $stmt->close();
             }
 
-            header("Location: index.php?route=message&user_id=" . urlencode($target_user_id));
+            header("Location: index.php?route=message&user_id=" . urlencode($receiver_id ?: $_SESSION['user_id']));
             exit;
         }
 
-        // Load all messages for user
+        // Load all users except current user (for message recipient selection)
+        $stmt = $mysqli->prepare("SELECT id, username FROM users WHERE id != ?");
+        $stmt->bind_param('s', $_SESSION['user_id']);
+        $stmt->execute();
+        $all_users = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        // Load all messages for current user
         $stmt = $mysqli->prepare("SELECT * FROM messages WHERE sender_id=? OR receiver_id=? ORDER BY created_at DESC");
         $stmt->bind_param('ss', $_SESSION['user_id'], $_SESSION['user_id']);
         $stmt->execute();
@@ -174,11 +185,32 @@ switch ($route) {
         include 'templates/message.php';
         break;
 
+    case 'all_messages':
+        if (!is_logged_in() || !is_admin($mysqli)) {
+            header('Location: index.php');
+            exit;
+        }
+
+        // Load ALL messages for admin view
+        $stmt = $mysqli->prepare("SELECT * FROM messages ORDER BY created_at DESC");
+        $stmt->execute();
+        $all_messages = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        include 'templates/all_messages.php';
+        break;
+
     case 'admin':
         if (!is_original_admin()) {
             header('Location: index.php');
             exit;
         }
+
+        // Load all users for the admin panel
+        $stmt = $mysqli->prepare("SELECT id, username, role FROM users");
+        $stmt->execute();
+        $users = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $userId = $_POST['user_id'] ?? '';
@@ -187,7 +219,13 @@ switch ($route) {
             $stmt->bind_param('ss', $newRole, $userId);
             $stmt->execute();
             $stmt->close();
-            echo "User role updated";
+            $success_message = "User role updated successfully!";
+            
+            // Reload users after update
+            $stmt = $mysqli->prepare("SELECT id, username, role FROM users");
+            $stmt->execute();
+            $users = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+            $stmt->close();
         }
         include 'templates/admin.php';
         break;
@@ -219,4 +257,3 @@ function template_footer() {
     echo "</body></html>";
 }
 ?>
-    
