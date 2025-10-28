@@ -54,7 +54,7 @@
                             <a href="index.php?route=admin" style="font-size: 0.9em; background-color: #FFE6CC; color: #2E1810; padding: 8px 15px; border: 1px solid #8B4513; border-radius: 4px; text-decoration: none;">Admin Panel</a>
                         <?php endif; ?>
                         <a href="index.php?route=all_messages" style="font-size: 0.9em; background-color: #FFE6CC; color: #2E1810; padding: 8px 15px; border: 1px solid #8B4513; border-radius: 4px; text-decoration: none;">View All Messages</a>
-                        <a href="index.php?route=flag" style="font-size: 0.9em; background-color: #FFE6CC; color: #2E1810; padding: 8px 15px; border: 1px solid #8B4513; border-radius: 4px; text-decoration: none;">Get Flag!</a>
+                        <!-- <a href="index.php?route=flag" style="font-size: 0.9em; background-color: #FFE6CC; color: #2E1810; padding: 8px 15px; border: 1px solid #8B4513; border-radius: 4px; text-decoration: none;">Get Flag!</a> -->
                     </div>
                 <?php endif; ?>
 
