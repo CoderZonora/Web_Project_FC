@@ -19,8 +19,8 @@
             <textarea name="message" id="message" rows="4" placeholder="Enter your message here" required></textarea>
         </div>
 
-        <label for="signature">Your Signature:</label>
-        <textarea name="signature" id="signature" rows="2" placeholder="Optional signature"><?php echo htmlspecialchars($current_user['signature'] ?? ''); ?></textarea>
+        <!-- <label for="signature">Your Signature:</label>
+        <textarea name="signature" id="signature" rows="2" placeholder="Optional signature"><?php echo htmlspecialchars($current_user['signature'] ?? ''); ?></textarea> -->
 
         <input type="hidden" name="user_hash" value="<?php echo htmlspecialchars($_SESSION['user_id']); ?>">
 
