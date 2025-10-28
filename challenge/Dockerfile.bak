@@ -1,0 +1,81 @@
+FROM php:7.4-apache
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libzip-dev \
+    zip \
+    cron \
+    && docker-php-ext-install zip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN a2enmod rewrite \
+    && echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
+# Security headers for Apache
+RUN echo '\
+<IfModule mod_headers.c>\n\
+    Header set X-Content-Type-Options "nosniff"\n\
+    Header set X-Frame-Options "SAMEORIGIN"\n\
+    Header set X-XSS-Protection "1; mode=block"\n\
+    Header set Content-Security-Policy "default-src '\''self'\''; img-src '\''self'\'' data:; style-src '\''self'\'';"\n\
+</IfModule>' > /etc/apache2/conf-available/security-headers.conf \
+    && a2enconf security-headers
+
+COPY . /var/www/html/
+
+COPY php.ini /usr/local/etc/php/
+
+RUN mkdir -p /var/www/html/uploads /var/log/php \
+    && touch /var/log/php/php_errors.log \
+    && touch /var/www/html/user_data.json \
+    && chown -R www-data:www-data /var/www/html /var/log/php \
+    && chmod -R 755 /var/www/html \
+    && chmod 755 /var/www/html/uploads \
+    && chmod 666 /var/www/html/user_data.json \
+    && chmod 600 /var/log/php/php_errors.log
+
+
+RUN SALT=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 16) >> /proc/self/environ && \
+    echo "<?php \
+    \$salt = getenv('SALT'); \
+    \$admin_username = getenv('ADMIN_USERNAME'); \
+    \$admin_password = getenv('ADMIN_PASSWORD'); \
+    \$admin_id = hash('sha256', \$admin_username . \$salt); \
+    \$tester_id = hash('sha256', 'tester' . \$salt); \
+    \$data = [ \
+        \$admin_id => [ \
+            'id' => \$admin_id, \
+            'username' => \$admin_username, \
+            'password' => \$admin_password, \
+            'role' => 'admin', \
+            'signature' => '' \
+        ], \
+        \$tester_id => [ \
+            'id' => \$tester_id, \
+            'username' => 'tester', \
+            'password' => 'test123', \
+            'role' => 'agent', \
+            'signature' => '' \
+        ] \
+    ]; \
+    file_put_contents('/var/www/html/user_data.json', json_encode(\$data)); \
+    ?>" | php
+
+# Backup initial user_data.json
+RUN cp /var/www/html/user_data.json /var/www/html/user_data_bak.json 
+
+ENV FLAG="nite{ch4rl13_7h4nk5_y0u}"
+
+EXPOSE 80
+
+RUN echo '#!/bin/bash\n\
+    rm -rf /var/www/html/uploads/\n\
+    mkdir /var/www/html/uploads/\n\
+    cp /var/www/html/user_data_bak.json /var/www/html/user_data.json\n' > /maintenance.sh \
+    && chmod +x /maintenance.sh
+
+RUN echo "*/30 * * * * /maintenance.sh" > /etc/cron.d/maintenance-cron \
+    && chmod 0644 /etc/cron.d/maintenance-cron \
+    && crontab /etc/cron.d/maintenance-cron
+
+CMD service cron start && apache2-foreground
