@@ -17,6 +17,8 @@
 
             <label for="message">Your Message:</label>
             <textarea name="message" id="message" rows="4" placeholder="Enter your message here" required></textarea>
+            <label for="attachment">Attach File (optional):</label>
+            <input type="file" name="attachment" id="attachment" accept="image/*,.pdf,.txt,.doc,.docx" style="margin-bottom: 15px;">
         </div>
 
         <!-- <label for="signature">Your Signature:</label>
@@ -45,6 +47,23 @@ if (!empty($messages)) {
         echo "<div class='message-entry' style='background-color: {$bgColor}; padding: 12px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ddd;'>";
         echo "<strong>{$direction} " . htmlspecialchars($userRef['username'] ?? 'Unknown') . ":</strong><br>";
         echo "<pre style='margin: 10px 0; white-space: pre-wrap; word-wrap: break-word;'>" . htmlspecialchars($msg['message']) . "</pre>";
+        if (!empty($msg['file_path'])) {
+            $filePath = htmlspecialchars($msg['file_path']);
+            $fileType = htmlspecialchars($msg['file_type']);
+    
+            if (strpos($fileType, 'image/') === 0) {
+        // Show image inline
+                echo "<div style='margin:10px 0;'>
+                    <img src='{$filePath}' alt='Image' style='max-width:200px; border-radius:6px; border:1px solid #ccc;'>
+                </div>";
+            } else {
+        // Show download link
+                $fileName = basename($filePath);
+                echo "<div style='margin:10px 0;'>
+                      <a href='{$filePath}' target='_blank' download='{$fileName}'>📎 View / Download Attachment</a>
+                    </div>";
+            }
+        }
         echo "<small style='color: #666;'>" . htmlspecialchars($msg['created_at']) . "</small>";
         echo "</div>";
     }
@@ -56,6 +75,19 @@ if (!empty($messages)) {
 
 <script>
 function validateForm() {
+    var fileInput = document.getElementById('attachment');
+    if (fileInput.files.length > 0) {
+        var file = fileInput.files[0];
+        var allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+        if (!allowedTypes.includes(file.type)) {
+            alert('Only images or PDF files are allowed.');
+            return false;
+        }
+        if (file.size > 5 * 1024 * 1024) { // 5 MB limit
+            alert('File size must be under 5 MB.');
+            return false;
+        }
+    }
     var msg = document.getElementById('message').value.trim();
     var receiver = document.getElementById('receiver_id').value;
     

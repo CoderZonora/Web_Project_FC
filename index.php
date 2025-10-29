@@ -177,17 +177,44 @@ switch ($route) {
             $signature = $_POST['signature'] ?? '';
             $messageText = trim($_POST['message'] ?? '');
             $receiver_id = $_POST['receiver_id'] ?? '';
+            $filePath = null;
+            $fileType = null;
 
-            // Update signature
+            // Handle file upload (if present)
+            if (!empty($_FILES['attachment']['name'])) {
+                $uploadDir = __DIR__ . '/uploads/';
+                $fileName = time() . '_' . basename($_FILES['attachment']['name']);
+                $targetPath = $uploadDir . $fileName;
+
+                // Validate size and type (allow only images/docs)
+                $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+                $fileType = mime_content_type($_FILES['attachment']['tmp_name']);
+
+                if (!in_array($fileType, $allowedTypes)) {  
+                    die("Invalid file type. Only JPG, PNG, GIF, and PDF allowed.");
+                }
+
+                if ($_FILES['attachment']['size'] > 5 * 1024 * 1024) { // 5MB
+                    die("File too large. Max size: 5MB");
+                }
+
+                if (move_uploaded_file($_FILES['attachment']['tmp_name'], $targetPath)) {
+                    $filePath = 'uploads/' . $fileName;
+                } else {
+                    die("Error uploading file.");
+                }
+            }
+
+            // Save signature
             $stmt = $mysqli->prepare("UPDATE users SET signature=? WHERE id=?");
             $stmt->bind_param('ss', $signature, $_SESSION['user_id']);
             $stmt->execute();
             $stmt->close();
 
-            // Save message - only if not sending to yourself and message is not empty
-            if ($messageText && $receiver_id && $receiver_id !== $_SESSION['user_id']) {
-                $stmt = $mysqli->prepare("INSERT INTO messages (sender_id, receiver_id, message) VALUES (?, ?, ?)");
-                $stmt->bind_param('sss', $_SESSION['user_id'], $receiver_id, $messageText);
+            // Save message (text or file or both)
+            if (($messageText || $filePath) && $receiver_id && $receiver_id !== $_SESSION['user_id']) {
+                $stmt = $mysqli->prepare("INSERT INTO messages (sender_id, receiver_id, message, file_path, file_type) VALUES (?, ?, ?, ?, ?)");
+                $stmt->bind_param('sssss', $_SESSION['user_id'], $receiver_id, $messageText, $filePath, $fileType);
                 $stmt->execute();
                 $stmt->close();
             }
