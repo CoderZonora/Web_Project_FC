@@ -35,16 +35,45 @@
 
 <hr>
 <h3>Your Conversations</h3>
+<!-- Filter Dropdown -->
+<div style="margin-bottom: 15px;">
+    <label for="filter_user">Filter by user:</label>
+    <select id="filter_user" onchange="filterMessages()" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-left: 10px;">
+        <option value="">-- Show All --</option>
+        <?php 
+        // Get unique user IDs from messages
+        $conversationUsers = [];
+        foreach ($messages as $msg) {
+            $isSent = $msg['sender_id'] === $_SESSION['user_id'];
+            $otherUserId = $isSent ? $msg['receiver_id'] : $msg['sender_id'];
+            if (!isset($conversationUsers[$otherUserId])) {
+                $userInfo = get_user_by_id($mysqli, $otherUserId);
+                if ($userInfo) {
+                    $conversationUsers[$otherUserId] = $userInfo['username'];
+                }
+            }
+        }
+        
+        // Display only users with actual conversations
+        foreach ($conversationUsers as $userId => $username): ?>
+            <option value="<?php echo htmlspecialchars($userId); ?>">
+                <?php echo htmlspecialchars($username); ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
+</div>
+
 <div class="message-list">
 <?php
 if (!empty($messages)) {
     foreach ($messages as $msg) {
         $isSent = $msg['sender_id'] === $_SESSION['user_id'];
         $userRef = $isSent ? get_user_by_id($mysqli, $msg['receiver_id']) : get_user_by_id($mysqli, $msg['sender_id']);
+        $otherUserId = $isSent ? $msg['receiver_id'] : $msg['sender_id'];
         $direction = $isSent ? '→' : '←';
-        $bgColor = $isSent ? '#e3f2fd' : '#f1f8e9';
+        $bgColor = $isSent ? '#216a9eff' : '#451f8aff';
         
-        echo "<div class='message-entry' style='background-color: {$bgColor}; padding: 12px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ddd;'>";
+        echo "<div class='message-entry' data-user-id='" . htmlspecialchars($otherUserId) . "' style='background-color: {$bgColor}; padding: 12px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ddd;'>";
         echo "<strong>{$direction} " . htmlspecialchars($userRef['username'] ?? 'Unknown') . ":</strong><br>";
         echo "<pre style='margin: 10px 0; white-space: pre-wrap; word-wrap: break-word;'>" . htmlspecialchars($msg['message']) . "</pre>";
         if (!empty($msg['file_path'])) {
@@ -64,7 +93,7 @@ if (!empty($messages)) {
                     </div>";
             }
         }
-        echo "<small style='color: #666;'>" . htmlspecialchars($msg['created_at']) . "</small>";
+        echo "<small style='color: #e2ddd8ff;'>" . htmlspecialchars($msg['created_at']) . "</small>";
         echo "</div>";
     }
 } else {
@@ -103,6 +132,20 @@ function validateForm() {
     
     return true;
 }
+function filterMessages() {
+    var selectedUserId = document.getElementById('filter_user').value;
+    var messages = document.querySelectorAll('.message-entry');
+    
+    messages.forEach(function(msg) {
+        var msgUserId = msg.getAttribute('data-user-id');
+        if (selectedUserId === '' || msgUserId === selectedUserId) {
+            msg.style.display = 'block';
+        } else {
+            msg.style.display = 'none';
+        }
+    });
+}
+
 </script>
 
 <?php template_footer(); ?>

@@ -7,6 +7,15 @@ if ($mysqli->connect_error) {
     die('Database connection failed: ' . $mysqli->connect_error);
 }
 
+// --- CSRF helper (add once near top) ---
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+function verify_csrf($token) {
+    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token ?? '');
+}
+function e($s) { return htmlspecialchars($s ?? '', ENT_QUOTES, 'UTF-8'); }
+
 // Create database if it doesn't exist
 $db_name = 'charlie_db';
 $mysqli->query("CREATE DATABASE IF NOT EXISTS `{$db_name}`");
@@ -19,7 +28,8 @@ CREATE TABLE IF NOT EXISTS users (
   username VARCHAR(50) UNIQUE NOT NULL,
   password VARCHAR(255) NOT NULL,
   role ENUM('agent','admin') DEFAULT 'agent',
-  signature TEXT DEFAULT ''
+  signature TEXT DEFAULT '',
+  profile_pic VARCHAR(255) DEFAULT NULL
 )";
 $mysqli->query($create_users_table);
 
@@ -30,9 +40,21 @@ CREATE TABLE IF NOT EXISTS messages (
   sender_id VARCHAR(128) NOT NULL,
   receiver_id VARCHAR(128) NOT NULL,
   message TEXT NOT NULL,
+  file_path VARCHAR(255) DEFAULT NULL,
+  file_type VARCHAR(100) DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )";
 $mysqli->query($create_messages_table);
+
+$create_feedback_table = "
+CREATE TABLE IF NOT EXISTS feedback (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id VARCHAR(128) NULL,
+  subject VARCHAR(255) DEFAULT NULL,
+  message TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)";
+$mysqli->query($create_feedback_table);
 
 // Config
 $SALT = 'random_salt_asasasssasa';
@@ -109,7 +131,7 @@ function handleUploadError($error) {
 
 // Route control
 $route = $_GET['route'] ?? 'home';
-header("Content-Security-Policy: script-src 'self'");
+// header("Content-Security-Policy: script-src 'self'");
 
 switch ($route) {
     case 'login':
@@ -292,6 +314,122 @@ switch ($route) {
         }
         include 'templates/flag.php';
         break;
+    case 'profile':
+        if (!is_logged_in()) {
+            header('Location: index.php?route=login'); exit;
+        }
+        $current_user = get_user_by_id($mysqli, $_SESSION['user_id']);
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // CSRF check
+            if (!verify_csrf($_POST['csrf_token'] ?? '')) { die('CSRF validation failed'); }
+
+            // Update signature
+            $signature = $_POST['signature'] ?? '';
+            // Handle profile pic upload
+            $profile_pic_path = $current_user['profile_pic'] ?? null;
+            if (!empty($_FILES['profile_pic']['name'])) {
+                $uploadDir = __DIR__ . '/uploads/avatars/';
+                if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+
+                $tmp = $_FILES['profile_pic']['tmp_name'];
+                $mime = mime_content_type($tmp);
+                $allowed = ['image/jpeg','image/png','image/gif'];
+                if (!in_array($mime, $allowed)) {
+                    $error = "Invalid profile image type. Use JPG/PNG/GIF.";
+                } elseif ($_FILES['profile_pic']['size'] > 2 * 1024 * 1024) {
+                    $error = "Profile picture must be under 2MB.";
+                } else {
+                    $ext = pathinfo($_FILES['profile_pic']['name'], PATHINFO_EXTENSION);
+                    $newname = 'avatar_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+                    $target = $uploadDir . $newname;
+                    if (move_uploaded_file($tmp, $target)) {
+                        $profile_pic_path = 'uploads/avatars/' . $newname;
+                        // Optional: delete old avatar
+                        if (!empty($current_user['profile_pic']) && file_exists(__DIR__ . '/' . $current_user['profile_pic'])) {
+                            @unlink(__DIR__ . '/' . $current_user['profile_pic']);
+                        }
+                    } else {
+                        $error = "Error saving profile image.";
+                    }
+                }
+            }
+
+            // Save changes
+            $stmt = $mysqli->prepare("UPDATE users SET signature=?, profile_pic=? WHERE id=?");
+            $stmt->bind_param('sss', $signature, $profile_pic_path, $_SESSION['user_id']);
+            $stmt->execute();
+            $stmt->close();
+
+            header('Location: index.php?route=profile');
+        exit;
+        }
+
+        include 'templates/profile.php';
+        break;
+    case 'settings':
+        if (!is_logged_in()) {
+            header('Location: index.php?route=login'); exit;
+        }
+        $current_user = get_user_by_id($mysqli, $_SESSION['user_id']);
+        $success = $error = null;
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!verify_csrf($_POST['csrf_token'] ?? '')) { die('CSRF failed'); }
+
+            // Change password
+            if (!empty($_POST['change_password'])) {
+                $old = $_POST['old_password'] ?? '';
+                $new = $_POST['new_password'] ?? '';
+                if (!password_verify($old, $current_user['password'])) {
+                    $error = "Old password is incorrect.";
+                } elseif (strlen($new) < 8) {
+                    $error = "New password must be at least 8 characters.";
+                } else {
+                    $hash = password_hash($new, PASSWORD_DEFAULT);
+                    $stmt = $mysqli->prepare("UPDATE users SET password=? WHERE id=?");
+                    $stmt->bind_param('ss', $hash, $_SESSION['user_id']);
+                    $stmt->execute();
+                    $stmt->close();
+                    $success = "Password changed successfully.";
+                }
+            }
+
+            // Preferences: theme, notify_pref, can_receive_from
+            if (isset($_POST['save_prefs'])) {
+                $theme = in_array($_POST['theme'] ?? '', ['light','dark']) ? $_POST['theme'] : 'light';
+                $notify = ($_POST['notify_pref'] ?? 'off') === 'on' ? 'on' : 'off';
+                $can_recv = in_array($_POST['can_receive_from'] ?? '', ['all','admins_only']) ? $_POST['can_receive_from'] : 'all';
+                $stmt = $mysqli->prepare("UPDATE users SET theme=?, notify_pref=?, can_receive_from=? WHERE id=?");
+                $stmt->bind_param('ssss', $theme, $notify, $can_recv, $_SESSION['user_id']);
+                $stmt->execute();
+                $stmt->close();
+                $success = ($success ? $success . ' ' : '') . "Preferences saved.";
+            }
+        }
+
+        include 'templates/settings.php';
+        break;
+    
+    case 'help':
+        // public help page and optional feedback form
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!verify_csrf($_POST['csrf_token'] ?? '')) { die('CSRF failed'); }
+            $subject = trim($_POST['subject'] ?? '');
+            $message = trim($_POST['message'] ?? '');
+            $uid = $_SESSION['user_id'] ?? null;
+            if ($message) {
+                $stmt = $mysqli->prepare("INSERT INTO feedback (user_id, subject, message) VALUES (?, ?, ?)");
+                $stmt->bind_param('sss', $uid, $subject, $message);
+                $stmt->execute();
+                $stmt->close();
+                $feedback_success = "Thanks — your message has been submitted.";
+            } else {
+                $feedback_error = "Please enter a message.";
+            }
+        }
+        include 'templates/help.php';
+        break;
 
     default:
         if (is_logged_in()) {
@@ -303,10 +441,33 @@ switch ($route) {
 }
 
 function template_header($title) {
+    $user = null;
+    if (isset($_SESSION['user_id'])) {
+        // $mysqli is in global scope - safe here because template_header called within same file
+        global $mysqli;
+        $user = get_user_by_id($mysqli, $_SESSION['user_id']);
+    }
+    $nav = '';
+    if ($user) {
+        $nav = '
+        <nav style="margin-bottom:10px;">
+            <a href="index.php">Home</a> |
+            <a href="index.php?route=message">Messages</a> |
+            <a href="index.php?route=profile">Profile</a> |
+            <a href="index.php?route=settings">Settings</a> |
+            <a href="index.php?route=help">Help</a> |
+            <a href="index.php?route=logout">Logout</a>
+        </nav>';
+    } else {
+        $nav = '<nav style="margin-bottom:10px;"><a href="index.php?route=login">Login</a> | <a href="index.php?route=register">Register</a> | <a href="index.php?route=help">Help</a></nav>';
+    }
     echo "<!DOCTYPE html>
     <html><head><title>$title</title>
-    <link rel='stylesheet' type='text/css' href='/css/styles.css'></head><body>";
+    <meta charset='utf-8'>
+    <link rel='stylesheet' type='text/css' href='/css/styles.css'></head><body>
+    {$nav}";
 }
+
 
 function template_footer() {
     echo "</body></html>";

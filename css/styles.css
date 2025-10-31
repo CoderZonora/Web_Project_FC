@@ -1,177 +1,251 @@
-/* Variables for consistent colors and values */
+/* ===== Root Theme Variables ===== */
 :root {
-  --primary-color: #47302b;
-  --primary-dark: #2e1810;
-  --background-light: #ffe6cc;
-  --border-color: #8b4513;
-  --text-color: #2e1810;
-  --white: #ffecd9;
-  --shadow: rgba(0, 0, 0, 0.1);
+  --primary-color: #2196F3;         /* Accent blue */
+  --primary-dark: #1976D2;          /* Darker accent */
+  --background-dark: #121212;       /* Main dark background */
+  --background-panel: #1E1E1E;      /* Panels, cards */
+  --border-color: #333;             /* Subtle border */
+  --text-color: #E0E0E0;            /* Primary text */
+  --muted-text: #AAAAAA;            /* Secondary text */
+  --white: #FFFFFF;
+  --shadow: rgba(0, 0, 0, 0.3);
+
+  --spacing-xs: 4px;
   --spacing-base: 8px;
   --spacing-medium: 15px;
-  --spacing-large: 20px;
-  --border-radius: 4px;
-  --error-bg: #ffe6cc;
-  --error-text: #47302b;
-  --success-bg: #d4edda;
-  --success-text: #155724;
+  --spacing-large: 25px;
+
+  --border-radius: 10px;
+
+  --error-bg: #3B1818;
+  --error-text: #EF5350;
+  --success-bg: #1B3B1D;
+  --success-text: #81C784;
 }
-/* Reset and base styles */
+
+/* ===== Reset ===== */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
+
 body {
-  background-color: var(--white);
-  font-family: Arial, sans-serif;
+  background-color: var(--background-dark);
+  font-family: "Segoe UI", Arial, sans-serif;
   color: var(--text-color);
   padding: var(--spacing-large);
   line-height: 1.6;
 }
-/* Typography */
-h1,
-h2,
-h3 {
-  color: var(--primary-color);
+
+/* ===== Typography ===== */
+h1, h2, h3, h4 {
+  color: var(--white);
   margin-bottom: var(--spacing-medium);
   line-height: 1.2;
+  font-weight: 600;
 }
-/* Links */
-a {
-  color: var(--primary-color);
-  text-decoration: none;
-  font-weight: bold;
-  transition: color 0.3s ease;
-}
-a:hover {
-  text-decoration: underline;
-  color: var(--primary-dark);
-}
-/* Container */
-.container {
-  max-width: 400px;
-  margin: 0 auto;
-  padding: var(--spacing-large);
-  background-color: var(--background-light);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  box-shadow: 0 4px var(--spacing-base) var(--shadow);
-}
-/* Form elements */
-form {
-  background-color: var(--background-light);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  padding: var(--spacing-medium);
-  box-shadow: 0 4px var(--spacing-base) var(--shadow);
-}
-/* Form groups and labels */
-.form-group {
-  margin-bottom: var(--spacing-medium);
-}
-label {
-  display: block;
-  margin-bottom: var(--spacing-base);
+
+p, label, input, select, textarea {
+  font-size: 15px;
   color: var(--text-color);
-  font-weight: 500;
 }
-/* Input fields */
+
+/* ===== Navigation Bar ===== */
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-medium);
+  align-items: center;
+  background: var(--background-panel);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-base) var(--spacing-medium);
+  margin-bottom: var(--spacing-large);
+  box-shadow: 0 3px 8px var(--shadow);
+}
+
+nav a {
+  color: var(--text-color);
+  text-decoration: none;
+  font-weight: 600;
+  padding: var(--spacing-base) var(--spacing-medium);
+  border-radius: var(--border-radius);
+  transition: all 0.2s ease;
+}
+
+nav a:hover {
+  background-color: var(--primary-color);
+  color: var(--white);
+}
+
+/* ===== Containers ===== */
+.container,
+form,
+.card {
+  background-color: var(--background-panel);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 12px var(--shadow);
+  padding: var(--spacing-large);
+  margin-bottom: var(--spacing-large);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 15px var(--shadow);
+}
+
+/* ===== Forms ===== */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-medium);
+}
+
+label {
+  font-weight: 500;
+  color: var(--muted-text);
+}
+
 input[type="text"],
 input[type="password"],
+input[type="email"],
+input[type="file"],
 select,
-textarea,
-input[type="submit"] {
+textarea {
   width: 100%;
   padding: var(--spacing-base);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
-  background-color: var(--white);
+  background-color: #2A2A2A;
+  color: var(--text-color);
   font-size: 14px;
-  box-sizing: border-box;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
-/* Textarea customization */
-textarea {
-  min-height: 20px;
-  resize: vertical;
-}
-/* Input focus styles */
-input[type="text"]:focus,
-input[type="password"]:focus,
+
+input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--primary-color);
   outline: none;
-  box-shadow: 0 0 0 2px rgba(71, 48, 43, 0.1);
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
 }
-/* Submit button styling */
-input[type="submit"] {
+
+/* ===== Buttons ===== */
+input[type="submit"],
+button {
   background-color: var(--primary-color);
   color: var(--white);
   text-transform: uppercase;
   cursor: pointer;
-  transition: background-color 0.3s ease;
-  padding: calc(var(--spacing-base) + 2px) var(--spacing-medium);
-}
-input[type="submit"]:hover {
-  background-color: var(--primary-dark);
-}
-/* Additional link and button styles */
-.nav-links,
-.admin-links {
-  display: flex;
-  gap: var(--spacing-medium);
-  align-items: center;
-}
-.nav-links {
-  justify-content: space-between;
-  margin-bottom: var(--spacing-large);
-}
-.back-link {
-  color: var(--text-color);
-  opacity: 0.7;
-}
-.back-link:hover {
-  opacity: 1;
-  text-decoration: none;
-}
-.admin-link {
-  background-color: var(--background-light);
-  color: var(--text-color);
-  padding: var(--spacing-base) var(--spacing-medium);
+  border: none;
   border-radius: var(--border-radius);
-  font-size: 14px;
-  transition: background-color 0.3s ease;
+  padding: calc(var(--spacing-base) + 2px) var(--spacing-large);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
-.admin-link:hover {
-  background-color: var(--border-color);
+
+input[type="submit"]:hover,
+button:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-2px);
 }
-/* Status messages */
-.upload-status {
-  margin-top: var(--spacing-medium);
+
+input[type="submit"]:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+}
+
+/* ===== Avatar/Profile ===== */
+.avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 3px solid var(--primary-color);
+  object-fit: cover;
+  box-shadow: 0 2px 6px var(--shadow);
+  margin-bottom: var(--spacing-medium);
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: row;
+  gap: var(--spacing-large);
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+/* ===== Status Alerts ===== */
+.alert {
   padding: var(--spacing-base);
   border-radius: var(--border-radius);
+  margin-top: var(--spacing-medium);
+  font-weight: 500;
 }
-.upload-status.success {
+
+.alert.success {
   background-color: var(--success-bg);
   color: var(--success-text);
 }
-.upload-status.error {
+
+.alert.error {
   background-color: var(--error-bg);
   color: var(--error-text);
 }
-/* Responsive design */
-@media (max-width: 600px) {
-  .container,
-  form {
-    padding: var(--spacing-base);
-  }
-  .nav-links,
-  .admin-links {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+
+/* ===== Tables / Message Panels ===== */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th, .table td {
+  border: 1px solid var(--border-color);
+  padding: var(--spacing-base);
+}
+
+.table th {
+  background-color: #2C2C2C;
+  color: var(--white);
+  text-align: left;
+}
+
+/* ===== Links ===== */
+a {
+  color: var(--primary-color);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--white);
+  text-decoration: underline;
+}
+
+/* ===== Footer ===== */
+footer {
+  margin-top: var(--spacing-large);
+  padding-top: var(--spacing-medium);
+  border-top: 1px solid var(--border-color);
+  font-size: 13px;
+  text-align: center;
+  color: var(--muted-text);
+}
+
+/* ===== Responsive Design ===== */
+@media (max-width: 768px) {
   body {
-    padding: var(--spacing-base);
+    padding: var(--spacing-medium);
+  }
+  nav {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .profile-info {
+    flex-direction: column;
+    align-items: center;
   }
 }

@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   xampp:
     image: tomsik68/xampp:latest
@@ -8,18 +6,16 @@ services:
       - "8080:80"
       - "3306:3306"
     volumes:
-      # Map your specific app directory into Apache web root
       - .:/opt/lampp/htdocs
-      # Persist MySQL data
+      - uploads_data:/opt/lampp/htdocs/uploads
       - mysql_data:/opt/lampp/var/mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
     command: >
-      bash -c "/opt/lampp/lampp start && tail -f /dev/null"
+      bash -c "chown -R daemon:daemon /opt/lampp/htdocs/uploads &&
+               /opt/lampp/lampp start && tail -f /dev/null"
     restart: unless-stopped
 
 volumes:
   mysql_data:
-
-
-#https://chatgpt.com/c/68fb135e-e90c-8323-85c8-df31f58e12cc - need to make changes. 
+  uploads_data:

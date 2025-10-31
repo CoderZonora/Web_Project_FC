@@ -26,7 +26,7 @@ if (!empty($all_messages)) {
 
         // Message text
         if (!empty($msg['message'])) {
-            echo "<pre style='background-color: #fff; padding: 10px; border-radius: 4px; border: 1px solid #eee; white-space: pre-wrap; word-wrap: break-word; margin-bottom: 10px;'>" 
+            echo "<pre style='background-color: #117bccff; padding: 10px; border-radius: 4px; border: 1px solid #117bccff; white-space: pre-wrap; word-wrap: break-word; margin-bottom: 10px;'>" 
                 . htmlspecialchars($msg['message']) . "</pre>";
         }
 
